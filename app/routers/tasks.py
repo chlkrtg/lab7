@@ -2,6 +2,7 @@ import asyncio
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
+from app.queue_worker import task_queue
 from app.storage import create_task, get_task
 from app.tasks import long_running_task, sync_cpu_bound
 
@@ -29,16 +30,13 @@ async def notify_email(
     return {"status": "email will be sent in background"}
 
 
-# ---------- Задание 3: длительная задача с polling ----------
+# ---------- Задание 6: очередь задач ----------
 @router.post("/process")
-async def start_processing(
-        input_data: dict,
-        background_tasks: BackgroundTasks,
-):
+async def start_processing(input_data: dict):
     task_id = create_task()
-    # Запускаем фоновую задачу (не блокирует ответ)
-    background_tasks.add_task(long_running_task, task_id, input_data)
-    return {"task_id": task_id}
+
+    await task_queue.put((task_id, input_data))
+    return {"task_id": task_id, "status": "queued"}
 
 
 @router.get("/{task_id}")
