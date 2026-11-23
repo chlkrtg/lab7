@@ -36,7 +36,7 @@ async def worker():
             await long_running_task(task_id, input_data)
 
             if callback_url:
-                task = get_task(task_id)
+                task = await get_task(task_id)
                 if task and task["status"] == "completed":
                     await send_callback(callback_url, {
                         "task_id": task_id,

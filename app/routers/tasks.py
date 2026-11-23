@@ -37,7 +37,7 @@ async def notify_email(
 # ---------- Задание 6: очередь задач ----------
 @router.post("/process")
 async def start_processing(request: ProcessRequest):
-    task_id = create_task()
+    task_id = await create_task()
     logger.info(f"Task {task_id} created and queued (callback_url={request.callback_url})")
     await task_queue.put((task_id, {"name": request.name}, request.callback_url))
     return {"task_id": task_id, "status": "queued"}
@@ -45,7 +45,7 @@ async def start_processing(request: ProcessRequest):
 
 @router.get("/{task_id}")
 async def get_task_status(task_id: str):
-    task = get_task(task_id)
+    task = await get_task(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task

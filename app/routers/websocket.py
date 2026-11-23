@@ -12,7 +12,7 @@ async def websocket_task_status(websocket: WebSocket, task_id: str):
     logger.info(f"WebSocket connected for task {task_id}")
     try:
         while True:
-            task = get_task(task_id)
+            task = await get_task(task_id)
             if not task:
                 await websocket.send_json({"error": "Task not found"})
                 break
