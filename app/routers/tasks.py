@@ -1,5 +1,5 @@
 import asyncio
-
+import logging
 from app.queue_worker import task_queue
 from app.tasks import sync_cpu_bound
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -8,10 +8,13 @@ from app.storage import create_task, get_task
 from pydantic import BaseModel
 from typing import Optional
 
+
 class ProcessRequest(BaseModel):
     name: str
     callback_url: Optional[str] = None
 
+
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/tasks", tags=["long tasks"])
 
 
@@ -35,6 +38,7 @@ async def notify_email(
 @router.post("/process")
 async def start_processing(request: ProcessRequest):
     task_id = create_task()
+    logger.info(f"Task {task_id} created and queued (callback_url={request.callback_url})")
     await task_queue.put((task_id, {"name": request.name}, request.callback_url))
     return {"task_id": task_id, "status": "queued"}
 

@@ -6,30 +6,31 @@ from app.storage import get_task
 
 task_queue: asyncio.Queue = asyncio.Queue()
 
+logger = logging.getLogger(__name__)
+
 
 async def send_callback(url: str, payload: dict):
-    """Отправляет POST-запрос на callback_url с повторными попытками."""
     max_retries = 3
     async with httpx.AsyncClient() as client:
         for attempt in range(1, max_retries + 1):
             try:
-                logging.info(f"Sending callback to {url} (attempt {attempt})")
+                logger.info(f"Sending callback to {url} (attempt {attempt})")
                 response = await client.post(url, json=payload, timeout=5.0)
                 response.raise_for_status()
-                logging.info(f"Callback sent successfully to {url}")
+                logger.info(f"Callback sent successfully to {url}")
                 return
             except Exception as e:
-                logging.warning(f"Callback failed (attempt {attempt}): {e}")
+                logger.warning(f"Callback failed (attempt {attempt}): {e}")
                 if attempt < max_retries:
                     await asyncio.sleep(2)
-        logging.error(f"Failed to send callback to {url} after {max_retries} attempts")
+        logger.error(f"Failed to send callback to {url} after {max_retries} attempts")
 
 
 async def worker():
-    logging.info("Worker started")
+    logger.info("Worker started")
     while True:
         task_id, input_data, callback_url = await task_queue.get()
-        logging.info(f"Worker picked up task {task_id}")
+        logger.info(f"Worker picked up task {task_id}")
 
         try:
             await long_running_task(task_id, input_data)
@@ -43,6 +44,6 @@ async def worker():
                         "result": task["result"]
                     })
         except Exception as e:
-            logging.error(f"Error in task {task_id}: {e}")
+            logger.error(f"Error in task {task_id}: {e}")
         finally:
             task_queue.task_done()
